@@ -1,72 +1,81 @@
 ---
 name: prd-to-issues
-description: Break a PRD into independently-workable issues and write each as a local markdown file in issues/. Use when the user wants to turn a PRD into a list of concrete tasks.
+description: Break a PRD, scoped feature plan, or workshop-ready spec into concrete vertical-slice issue files in issues/. Use when the user wants to turn a PRD into tasks, generate AFK or HITL implementation slices, or quickly produce dependency-ordered local issue files from an approved spec.
 ---
 
 # PRD to Issues
 
-Break a PRD into independently-grabbable issues using vertical slices (tracer bullets), written as local markdown files.
+Turn a PRD into thin, independently workable vertical slices. Prefer a fast, recommended breakdown over a long review cycle.
 
-## Process
+## Workflow
 
-### 1. Locate the PRD
+1. Locate the PRD.
 
-Ask the user for the PRD file path (e.g. `issues/prd.md`).
+- Default to `issues/prd.md` if it exists and the user did not specify another file.
+- If the PRD is not already in context, read it from disk.
 
-If the PRD is not already in your context window, read it from the file.
+2. Rebuild the relevant repo context.
 
-### 2. Explore the codebase (optional)
+- Explore only the codebase seams needed to judge slice boundaries, blockers, and likely module touch points.
+- Use the current repo state to avoid proposing slices that depend on nonexistent infrastructure or miss obvious integration paths.
 
-If you have not already explored the codebase, do so to understand the current state of the code.
+3. Draft vertical slices.
 
-### 3. Draft vertical slices
+- Break the work into tracer bullets, not horizontal layers.
+- Each slice should cut end-to-end through the required layers for that thin behavior.
+- Prefer many small demoable slices over a few broad ones.
+- Prefer AFK slices unless genuine human review or design choice is required.
 
-Break the PRD into **tracer bullet** issues. Each issue is a thin vertical slice that cuts through ALL integration layers end-to-end, NOT a horizontal slice of one layer.
+## Vertical Slice Rules
 
-Slices may be 'HITL' or 'AFK'. HITL slices require human interaction, such as an architectural decision or a design review. AFK slices can be implemented and merged without human interaction. Prefer AFK over HITL where possible.
+- A slice must be narrow but complete.
+- A completed slice must be demoable, testable, or otherwise verifiable on its own.
+- Do not create "schema only," "API only," or "UI only" slices unless the user explicitly wants infrastructure work separated out.
+- Use blockers only when one slice truly cannot proceed without another.
+- Prefer dependency chains that keep momentum high and parallelism possible.
 
-<vertical-slice-rules>
-- Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
-- A completed slice is demoable or verifiable on its own
-- Prefer many thin slices over few thick ones
-</vertical-slice-rules>
+## Speed Rules
 
-### 4. Quiz the user
+- Do not force a long quiz round if the PRD is already clear.
+- If the user signals urgency or workshop mode, present a compact recommended breakdown first.
+- Ask only for the smallest approval needed to avoid writing bad issues.
+- If the user clearly wants to move fast, accept reasonable defaults for granularity, HITL/AFK labeling, and dependency structure.
+
+## Presentation
 
 Present the proposed breakdown as a numbered list. For each slice, show:
 
-- **Title**: short descriptive name
-- **Type**: HITL / AFK
-- **Blocked by**: which other slices (if any) must complete first
-- **User stories covered**: which user stories from the PRD this addresses
+- Title
+- Type: `AFK` or `HITL`
+- Blocked by: `None` or the slice titles it depends on
+- User stories covered: reference the relevant PRD story numbers
+- Why this slice exists: one sentence on the end-to-end behavior it proves
 
-Ask the user:
+Keep this review concise. If the user is in workshop mode, prefer one pass of "approve or change" over iterative interrogation.
 
-- Does the granularity feel right? (too coarse / too fine)
-- Are the dependency relationships correct?
-- Should any slices be merged or split further?
-- Are the correct slices marked as HITL and AFK?
+## File Creation
 
-Iterate until the user approves the breakdown.
+After approval, write each slice as a markdown file in `issues/`.
 
-### 5. Create the issue files
+- Use the naming pattern `issues/NNN-short-title.md`.
+- Start numbering from the next available number in `issues/`.
+- Create files in dependency order so blocker references can point at real filenames.
+- Use local filenames, never GitHub issue numbers.
+- Do not call `gh issue create` or any external service.
+- Do not modify the parent PRD.
 
-For each approved slice, write a markdown file in `issues/` using the naming pattern `issues/NNN-short-title.md` (e.g. `issues/001-add-user-auth.md`).
+## Issue Template
 
-Number issues starting from the next available number (check what files already exist in `issues/`).
+Write each issue with this structure:
 
-Create files in dependency order (blockers first) so you can reference real filenames in the "Blocked by" field.
-
-Do NOT use `gh issue create` or any GitHub CLI commands. Do NOT reference GitHub issue numbers. Use local filenames for all cross-references.
-
-<issue-template>
+```md
 ## Parent PRD
 
-`issues/prd.md` (or whichever PRD file was used)
+`issues/prd.md`
 
 ## What to build
 
-A concise description of this vertical slice. Describe the end-to-end behavior, not layer-by-layer implementation. Reference specific sections of the parent PRD rather than duplicating content.
+A concise description of this vertical slice. Describe the end-to-end behavior it delivers, not a layer-by-layer implementation checklist. Reference the relevant PRD sections or user stories instead of duplicating the entire spec.
 
 ## Acceptance criteria
 
@@ -76,17 +85,20 @@ A concise description of this vertical slice. Describe the end-to-end behavior, 
 
 ## Blocked by
 
-- Blocked by `issues/NNN-title.md` (if any)
+- `issues/NNN-title.md`
 
-Or "None - can start immediately" if no blockers.
+Or `None - can start immediately` if there are no blockers.
 
 ## User stories addressed
 
-Reference by number from the parent PRD:
+- User story 1
+- User story 4
+```
 
-- User story 3
-- User story 7
+## Quality Bar
 
-</issue-template>
-
-Do NOT close or modify the parent PRD file.
+- Acceptance criteria should describe observable behavior, not implementation tasks.
+- Titles should be concrete and implementation-friendly.
+- Slices should be small enough that one agent or developer can own them cleanly.
+- If a slice feels too broad, split it by end-to-end behavior, not by technical layer.
+- If several tiny slices only make sense together, merge them.

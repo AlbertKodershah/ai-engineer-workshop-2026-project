@@ -1,107 +1,99 @@
 ---
 name: tdd
-description: Test-driven development with red-green-refactor loop. Use when user wants to build features or fix bugs using TDD, mentions "red-green-refactor", wants integration tests, or asks for test-first development.
+description: Behavior-first test-driven development with a vertical red-green-refactor loop. Use when the user wants TDD, mentions red-green-refactor, wants a feature or bugfix built test-first, or needs help choosing high-value behavioral tests in this codebase.
 ---
 
 # Test-Driven Development
 
-## Philosophy
+Default to pragmatic, behavior-first TDD. Keep the loop tight, test through real boundaries, and avoid spending the whole task in planning mode.
 
-**Core principle**: Tests should verify behavior through public interfaces, not implementation details. Code can change entirely; tests shouldn't.
+See [tests.md](tests.md) for examples, [mocking.md](mocking.md) for boundary mocking guidance, [interface-design.md](interface-design.md) for testable interface rules, and [refactoring.md](refactoring.md) for post-green cleanup ideas.
 
-**Good tests** are integration-style: they exercise real code paths through public APIs. They describe _what_ the system does, not _how_ it does it. A good test reads like a specification - "user can checkout with valid cart" tells you exactly what capability exists. These tests survive refactors because they don't care about internal structure.
+## Core Rules
 
-**Bad tests** are coupled to implementation. They mock internal collaborators, test private methods, or verify through external means (like querying a database directly instead of using the interface). The warning sign: your test breaks when you refactor, but behavior hasn't changed. If you rename an internal function and tests fail, those tests were testing implementation, not behavior.
+- Test observable behavior through a public boundary, not private helpers.
+- Write one failing test at a time.
+- Implement only enough code to make the current test pass.
+- Prefer vertical slices over horizontal batches of tests or code.
+- Refactor only after returning to green.
 
-See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
+## Anti-Patterns
 
-## Anti-Pattern: Horizontal Slices
-
-**DO NOT write all tests first, then all implementation.** This is "horizontal slicing" - treating RED as "write all tests" and GREEN as "write all code."
-
-This produces **crap tests**:
-
-- Tests written in bulk test _imagined_ behavior, not _actual_ behavior
-- You end up testing the _shape_ of things (data structures, function signatures) rather than user-facing behavior
-- Tests become insensitive to real changes - they pass when behavior breaks, fail when behavior is fine
-- You outrun your headlights, committing to test structure before understanding the implementation
-
-**Correct approach**: Vertical slices via tracer bullets. One test → one implementation → repeat. Each test responds to what you learned from the previous cycle. Because you just wrote the code, you know exactly what behavior matters and how to verify it.
-
-```
-WRONG (horizontal):
-  RED:   test1, test2, test3, test4, test5
-  GREEN: impl1, impl2, impl3, impl4, impl5
-
-RIGHT (vertical):
-  RED→GREEN: test1→impl1
-  RED→GREEN: test2→impl2
-  RED→GREEN: test3→impl3
-  ...
-```
+- Do not write all tests first and all implementation later.
+- Do not test internal call structure, private methods, or collaborator invocation counts unless the collaborator is a true system boundary.
+- Do not over-mock your own modules just to make tests easier.
+- Do not ask the user to pre-approve every test if the issue or PRD already makes the target behavior clear.
 
 ## Workflow
 
-### 1. Planning
+1. Choose the boundary and first behavior.
 
-Before writing any code:
+- Infer the public boundary from the issue, PRD, or existing code whenever it is clear.
+- Ask the user only if there are multiple materially different interface choices or test scopes with real product impact.
+- Pick the smallest end-to-end behavior that proves the slice works.
+- Prefer the highest-risk behavior first: idempotence, permissions, state transitions, or the main happy path.
 
-- [ ] Confirm with user what interface changes are needed
-- [ ] Confirm with user which behaviors to test (prioritize)
-- [ ] Identify opportunities for [deep modules](deep-modules.md) (small interface, deep implementation)
-- [ ] Design interfaces for [testability](interface-design.md)
-- [ ] List the behaviors to test (not implementation steps)
-- [ ] Get user approval on the plan
+2. Write the first failing test.
 
-Ask: "What should the public interface look like? Which behaviors are most important to test?"
+- Express the test in terms of behavior a caller or user would care about.
+- Name the test after the capability, not the implementation.
+- Run the narrowest test command that exercises just that behavior.
 
-**You can't test everything.** Confirm with the user exactly which behaviors matter most. Focus testing effort on critical paths and complex logic, not every possible edge case.
+3. Make it pass with minimal code.
 
-### 2. Tracer Bullet
+- Change only the code needed for the current behavior.
+- Avoid building future functionality early.
+- Re-run the same narrow test until green.
 
-Write ONE test that confirms ONE thing about the system:
+4. Repeat one behavior at a time.
 
-```
-RED:   Write test for first behavior → test fails
-GREEN: Write minimal code to pass → test passes
-```
+- Add the next failing test only after the current one is green.
+- Let each new test respond to what the previous cycle revealed.
+- Keep expanding the behavior surface in thin slices.
 
-This is your tracer bullet - proves the path works end-to-end.
+5. Refactor after green.
 
-### 3. Incremental Loop
+- Extract duplication.
+- Deepen shallow modules.
+- Move complex logic behind small, stable interfaces.
+- Re-run tests after each refactor step.
 
-For each remaining behavior:
+6. Finish with broader verification.
 
-```
-RED:   Write next test → fails
-GREEN: Minimal code to pass → passes
-```
+- Run the relevant targeted test file(s).
+- Run `npm test` before closing the task.
+- Run `npm run typecheck` before closing the task.
 
-Rules:
+## Repo Guidance
 
-- One test at a time
-- Only enough code to pass current test
-- Don't anticipate future tests
-- Keep tests focused on observable behavior
+In this repo, prefer service-boundary tests for business logic.
 
-### 4. Refactor
+- Many existing tests follow the pattern in `app/services/*.test.ts`.
+- Use the in-memory SQLite test database from `app/test/setup.ts` when testing data-heavy services.
+- Mock `~/db` at the module boundary so the service under test uses the fresh test database.
+- Seed the smallest base data needed, then add only the records required for the behavior under test.
 
-After all tests pass, look for [refactor candidates](refactoring.md):
+When the route layer is thin:
 
-- [ ] Extract duplication
-- [ ] Deepen modules (move complexity behind simple interfaces)
-- [ ] Apply SOLID principles where natural
-- [ ] Consider what new code reveals about existing code
-- [ ] Run tests after each refactor step
+- Push complex logic into a service or deep module.
+- Test the service heavily.
+- Keep route tests for integration behavior, request branching, and returned data shape only when that behavior is the real risk.
 
-**Never refactor while RED.** Get to GREEN first.
+When external boundaries are involved:
 
-## Checklist Per Cycle
+- Mock only the true boundary: time, randomness, external APIs, filesystem, or similar.
+- Do not mock your own service layer if you can test the real behavior through the public interface.
 
-```
-[ ] Test describes behavior, not implementation
-[ ] Test uses public interface only
-[ ] Test would survive internal refactor
-[ ] Code is minimal for this test
-[ ] No speculative features added
-```
+## Fast Defaults
+
+- If the user asked for TDD and did not specify exact tests, choose the highest-value behaviors yourself.
+- In workshop mode, prefer a tracer bullet plus 2-3 follow-up behaviors over exhaustive edge-case coverage.
+- If the codebase already shows an established test style, follow it instead of inventing a new one.
+
+## Per-Cycle Checklist
+
+- The test describes behavior, not implementation.
+- The test uses a public interface or real boundary.
+- The test would survive an internal refactor.
+- The implementation is minimal for the current test.
+- No speculative behavior was added.

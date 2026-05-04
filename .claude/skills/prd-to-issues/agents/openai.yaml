@@ -1,0 +1,4 @@
+interface:
+  display_name: "PRD to Issues"
+  short_description: "Turn a PRD into vertical slice issues"
+  default_prompt: "Use $prd-to-issues to break this PRD into workshop-friendly vertical slices."

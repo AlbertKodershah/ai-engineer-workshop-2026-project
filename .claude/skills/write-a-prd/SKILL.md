@@ -1,26 +1,104 @@
 ---
 name: write-a-prd
-description: Generate a PRD from the client brief and write it as a local markdown file in issues/. Use when the user wants to turn a client request into a structured PRD.
+description: Turn a client brief, feature request, workshop idea, or partially-decided plan into a pragmatic PRD written to issues/prd.md. Use when the user wants a PRD, wants to scope a feature, wants to convert a brief or Slack request into product requirements, or needs a fast workshop-friendly spec with explicit assumptions and implementation/testing decisions.
 ---
 
-This skill will be invoked when the user wants to create a PRD. You may skip steps if you don't consider them necessary.
+# Write a PRD
 
-1. Ask the user for a long, detailed description of the problem they want to solve and any potential ideas for solutions.
+Default to a pragmatic, decision-oriented PRD. Prefer drafting from the brief and repo context instead of forcing a long discovery interview.
 
-2. Explore the repo to verify their assertions and understand the current state of the codebase.
+## Workflow
 
-3. Interview the user relentlessly about every aspect of this plan until you reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.
+1. Read the artifact and the repo.
 
-4. Sketch out the major modules you will need to build or modify to complete the implementation. Actively look for opportunities to extract deep modules that can be tested in isolation.
+- Read the client brief, issue, notes, or request first.
+- Explore the repo to verify the current state, constraints, and relevant seams.
+- Summarize what is already known before asking the user anything.
 
-A deep module (as opposed to a shallow module) is one which encapsulates a lot of functionality in a simple, testable interface which rarely changes.
+2. Resolve only blocking decisions.
 
-Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
+- Ask only the smallest set of questions needed to avoid a bad PRD.
+- Prefer recommended defaults over open-ended brainstorming.
+- Ask one high-leverage question at a time when clarification is needed.
+- If the user signals time pressure or workshop mode, compress aggressively:
+  - summarize the remaining forks,
+  - recommend defaults,
+  - lock accepted defaults quickly,
+  - move on.
 
-5. Once you have a complete understanding of the problem and solution, use the template below to write the PRD. The PRD should be written as a local markdown file at `issues/prd.md`. Create the `issues/` directory if it doesn't exist. Do NOT submit a GitHub issue or call any external service.
+3. Shape the implementation.
 
-<prd-template>
+- Identify the main modules or boundaries likely to change.
+- Prefer small vertical slices and deep modules over broad horizontal work.
+- Capture schema changes, route or API contracts, state ownership, failure modes, and rollout assumptions.
+- Decide what deserves tests based on behavioral risk, not completeness theater.
 
+4. Write the PRD to `issues/prd.md`.
+
+- Create `issues/` if it does not exist.
+- Write decisive prose and record assumptions explicitly instead of stalling on every unknown.
+- Keep the document product-facing, but make implementation and testing decisions concrete enough to guide issue breakdown.
+- Do not create a GitHub issue or call external services.
+
+5. Sanity-check the scope.
+
+- Ensure the proposed `v1` is coherent, demoable, and small enough for the user's timeline.
+- Push non-essential work into `Out of Scope`.
+- If unresolved blockers remain, record them in `Further Notes`.
+
+## Speed Rules
+
+- Do not require the user to provide a long description if a brief already exists.
+- Do not grill the user on every branch when a reasonable default exists.
+- Do not turn tuning questions into blockers unless they change architecture or scope.
+- Prefer the smallest viable `v1` when the brief is ambiguous.
+- Prefer explicit assumptions over fake certainty.
+
+## PRD Content Rules
+
+### Problem Statement
+
+- Describe the problem from the user's perspective.
+- State the pain clearly and concretely.
+
+### Solution
+
+- Describe the proposed solution from the user's perspective.
+- Keep it focused on the intended `v1`.
+
+### User Stories
+
+- Write a numbered list in the form `As an <actor>, I want a <feature>, so that <benefit>`.
+- Cover the main actors, primary flows, permissions, edge cases, empty states, and failure paths.
+- Be thorough, but do not pad the list with trivial restatements.
+
+### Implementation Decisions
+
+- Record the main modules or boundaries that will change.
+- Record interface, schema, API, state, rollout, and migration decisions.
+- Record important assumptions and defaults that were chosen to keep momentum.
+- Do not include file paths or code snippets.
+
+### Testing Decisions
+
+- State that good tests verify external behavior through public interfaces, not implementation details.
+- Record which modules or boundaries should be tested.
+- Mention relevant prior art in the repo when it exists.
+- Focus on high-risk behaviors, idempotence, permissions, and regressions.
+
+### Out of Scope
+
+- Record non-`v1` items, deferred tuning, nice-to-haves, and adjacent ideas.
+
+### Further Notes
+
+- Record follow-up risks, open questions, backfill assumptions, rollout notes, or future extensions.
+
+## Template
+
+Write the PRD using this structure:
+
+```md
 ## Problem Statement
 
 The problem that the user is facing, from the user's perspective.
@@ -31,44 +109,21 @@ The solution to the problem, from the user's perspective.
 
 ## User Stories
 
-A LONG, numbered list of user stories. Each user story should be in the format of:
-
 1. As an <actor>, I want a <feature>, so that <benefit>
-
-<user-story-example>
-1. As a mobile bank customer, I want to see balance on my accounts, so that I can make better informed decisions about my spending
-</user-story-example>
-
-This list of user stories should be extremely extensive and cover all aspects of the feature.
 
 ## Implementation Decisions
 
-A list of implementation decisions that were made. This can include:
-
-- The modules that will be built/modified
-- The interfaces of those modules that will be modified
-- Technical clarifications from the developer
-- Architectural decisions
-- Schema changes
-- API contracts
-- Specific interactions
-
-Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
+- Decision 1
 
 ## Testing Decisions
 
-A list of testing decisions that were made. Include:
-
-- A description of what makes a good test (only test external behavior, not implementation details)
-- Which modules will be tested
-- Prior art for the tests (i.e. similar types of tests in the codebase)
+- Testing decision 1
 
 ## Out of Scope
 
-A description of the things that are out of scope for this PRD.
+- Out of scope item 1
 
 ## Further Notes
 
-Any further notes about the feature.
-
-</prd-template>
+- Note 1
+```
